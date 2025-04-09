@@ -1,0 +1,503 @@
+---
+title: "Eplorazioni/tabelle per presentazione"
+output: html_document
+---
+
+GRAFICO TOP 5 PAESI PIU RAPPRESENTATI CON TOTALE
+```{r}
+# Carica i pacchetti necessari
+library(ggplot2)
+library(dplyr)
+library(gridExtra)  # Per visualizzare grafico e tabella insieme
+library(grid)  # Per usare grid.text()
+library(haven)
+
+```
+
+
+DIAGRAMMA A BARRE (WORKERS'S STRAIN)
+```{r}
+library(ggplot2)
+library(dplyr)
+
+dataset$strain <- factor(dataset$strain, levels = c(1.0, 2.0), labels = c("True", "False"))
+
+# Calcolare le percentuali
+data_summary <- dataset %>%
+  count(strain) %>%
+  mutate(perc = n / sum(n) * 100)
+
+# Creare il grafico con sfondo bianco
+grafico <- ggplot(data_summary, aes(x = strain, y = perc, fill = strain)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("True" = "blue", "False" = "red")) +
+  geom_text(aes(label = paste0(round(perc, 1), "%")), vjust = -0.5) +
+  labs(title = "Stress nei lavoratori", x = "Strain", y = "Percentuale") +
+  theme_minimal(base_size = 14) +       # Stile minimal
+  theme(panel.background = element_rect(fill = "white", color = NA), 
+        plot.background = element_rect(fill = "white", color = NA),   
+        panel.grid.major = element_line(color = "gray90"),            
+        panel.grid.minor = element_blank())                           
+
+print(grafico)
+
+
+percorso_file <- "C:/Users/Davide/Desktop/TESI DI LAUREA/stress_lavoratori.png"
+
+ggsave(filename = percorso_file, plot = grafico, width = 6, height = 4, dpi = 300, bg = "white")
+
+
+```
+
+WELLBEING_PRE_PRE PROCESSING
+```{r}
+
+library(dplyr)
+library(flextable)
+library(officer)
+
+dataset$wellbeing_cat <- factor(dataset$wellbeing_cat, 
+                                levels = c(1.0, 2.0, 3.0), 
+                                labels = c("Depression", "At Risk", "Normal"))
+
+# Tabella con conteggio e NA
+tabella <- dataset %>%
+  summarise(Depression = sum(wellbeing_cat == "Depression", na.rm = TRUE),
+            At_Risk = sum(wellbeing_cat == "At Risk", na.rm = TRUE),
+            Normal = sum(wellbeing_cat == "Normal", na.rm = TRUE),
+            Missing = sum(is.na(wellbeing_cat))) %>%
+  tidyr::pivot_longer(cols = everything(), names_to = "Category", values_to = "Count")
+
+# Tabella con flextable
+ft <- flextable(tabella) %>%
+  theme_vanilla() %>%  # Stile pulito
+  set_table_properties(width = 1, layout = "autofit") %>% 
+  bold(part = "header") %>%  # Grassetto per l’intestazione
+  fontsize(size = 12) %>%  # Font leggibile
+  color(part = "header", color = "white") %>%  # Testo bianco in intestazione
+  bg(part = "header", bg = "#0073C2") %>%  # Blu per l'intestazione
+  align(align = "center", part = "all")  # Testo centrato
+
+save_as_image(ft, path = "C:/Users/Davide/Desktop/TESI DI LAUREA/tabella_wellbeing.png")
+
+ft
+```
+
+
+
+WELLBEING_CAT_POST PRE PROCESSING
+```{r}
+library(dplyr)
+library(flextable)
+library(officer)
+
+# Tabella con conteggio delle categorie e NA
+tabella_clean <- dataset_clean %>%
+  summarise(
+    Depression = sum(wellbeing_cat == "depression", na.rm = TRUE),
+    At_Risk = sum(wellbeing_cat == "at_risk", na.rm = TRUE),
+    Normal = sum(wellbeing_cat == "normal", na.rm = TRUE),
+    Missing = sum(is.na(wellbeing_cat))
+  ) %>%
+  tidyr::pivot_longer(cols = everything(), names_to = "Category", values_to = "Count")
+
+# Tabella con flextable
+ft_clean <- flextable(tabella_clean) %>%
+  theme_vanilla() %>%  # Stile pulito
+  set_table_properties(width = 1, layout = "autofit") %>% 
+  bold(part = "header") %>%  # Grassetto per l’intestazione
+  fontsize(size = 12) %>%  # Font leggibile
+  color(part = "header", color = "white") %>%  # Testo bianco nell'intestazione
+  bg(part = "header", bg = "#0073C2") %>%  # Blu per l'intestazione
+  align(align = "center", part = "all")  # Testo centrato
+
+save_as_image(ft_clean, path = "C:/Users/Davide/Desktop/TESI DI LAUREA/tabella_wellbeing_clean.png")
+
+ft_clean
+```
+
+WELLBEING, DIAGRAMMA A BARRE (DATASET ORIGINE)
+```{r}
+# Calcolare le percentuali per ciascun valore della variabile 'wellbeing_cat'
+percentuali <- prop.table(table(dataset$wellbeing_cat)) * 100
+
+# Creare un grafico a barre con colori differenti per ciascuna categoria
+library(ggplot2)
+
+ggplot(as.data.frame(percentuali), aes(x = Var1, y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("1" = "red", "2" = "orange", "3" = "green")) +  
+  scale_x_discrete(labels = c("1" = "Depression", "2" = "At risk", "3" = "Normal")) +
+  labs(x = "Wellbeing Category", y = "Percentuale (%)", title = "Distribuzione Wellbeing_cat") +
+  theme_minimal() +
+  geom_text(aes(label = paste0(round(Freq, 1), "%")), vjust = -0.5)
+
+```
+
+
+WELLBEING_POST PRE_PROCESSING
+```{r}
+
+library(ggplot2)
+library(dplyr)
+
+# Calcolare la distribuzione in percentuale delle categorie di wellbeing_cat
+df_percentage <- dataset_clean %>%
+  group_by(wellbeing_cat) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+# Creare il diagramma a barre e aggiungere le percentuali
+ggplot(df_percentage, aes(x = wellbeing_cat, y = percentage, fill = wellbeing_cat)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(round(percentage, 1), "%")), vjust = -0.5) + 
+  labs(title = "Distribuzione Wellbeing_cat (Dataset_clean)", x = "Wellbeing Category", y = "Percentuale (%)") +
+  theme_minimal() +
+  scale_fill_manual(values = c("depression" = "red", "at_risk" = "orange", "normal" = "green"))
+
+
+```
+
+
+DATASET PRE E POST
+```{r}
+library(ggplot2)
+
+# Creazione della tabella con il numero di osservazioni per ogni dataset
+obs_counts <- data.frame(
+  Dataset = c("dataset", "dataset_clean"),
+  Numero_osservazioni = c(nrow(dataset), nrow(dataset_clean))
+)
+
+# Crea un grafico a barre colorato
+table_plot <- ggplot(obs_counts, aes(x = Dataset, y = Numero_osservazioni, fill = Dataset)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = Numero_osservazioni), vjust = -0.5, color = "black") +  # 
+  theme_minimal() +
+  labs(title = "Numero di Osservazioni", y = "Numero di Osservazioni", x = "Dataset") +
+  scale_fill_manual(values = c("lightblue", "lightgreen"))  # Colori per le barre
+
+
+ggsave("tabella_osservazioni_colored.png", plot = table_plot, width = 8, height = 6)
+
+table_plot
+```
+
+
+TOP 5 VARIABILI PIU INFLUENTI SUL BENESSERE
+```{r}
+library(MASS)
+library(dplyr)
+library(ggplot2)
+library(broom)
+
+# Estrazione i coefficienti del modello Probit Ordinale
+coeff_df <- summary(model_probit)$coefficients %>%
+  as.data.frame() %>%
+  mutate(variable = rownames(.)) %>%
+  rename(estimate = Value) %>%
+  filter(!grepl("\\|", variable)) %>%  # Escludo i cutpoints
+  arrange(desc(abs(estimate))) %>%  # Ordinare per grandezza assoluta
+  head(5)  # Seleziona le 5 variabili più influenti
+
+print(coeff_df)
+
+# Creare un grafico a barre per visualizzare le 5 variabili più influenti
+ggplot(coeff_df, aes(x = reorder(variable, abs(estimate)), y = estimate, fill = estimate)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  theme_minimal() +
+  labs(title = "Top 5 variabili più influenti sul benessere",
+       x = "Variabile", y = "Coefficiente del modello Probit Ordinale") +
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0)
+
+```
+
+
+TOP 3 VARIABILI INFLUENTI POSTIVAMENTE SUL BENESSERE
+```{r}
+library(MASS)
+library(dplyr)
+library(ggplot2)
+
+# Estrarre i coefficienti del modello Probit Ordinale
+coeff_df <- summary(model_probit)$coefficients %>%
+  as.data.frame() %>%
+  mutate(variable = rownames(.)) %>%
+  rename(estimate = Value) %>%
+  filter(!grepl("\\|", variable)) %>%  # Escludo i cutpoints
+  filter(estimate > 0) %>%  # Filtro solo le variabili con coefficiente positivo
+  arrange(desc(abs(estimate))) %>%  # Ordino per grandezza assoluta
+  head(3)  # Seleziono le 3 variabili più influenti e positive
+
+print(coeff_df)
+
+plot_positive <- ggplot(coeff_df, aes(x = reorder(variable, abs(estimate)), y = estimate, fill = estimate)) +
+  geom_bar(stat = "identity", width = 0.3) +
+  coord_flip() +
+  theme_bw() +  # Sfondo bianco
+  labs(title = "Top 3 Variabili Più Influenti e Positive sul Benessere",
+       x = "Variabile", y = "Coefficiente del modello Probit Ordinale") +
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0)
+
+ggsave("top_3_variabili_positive_benessere.png", plot = plot_positive, width = 8, height = 6, dpi = 300)
+
+```
+
+
+TOP 3 VARIABILI INFLUENTI NEGATIVAMENTE SUL BENESSERE
+```{r}
+library(MASS)
+library(dplyr)
+library(ggplot2)
+
+# Estrarre i coefficienti del modello Probit Ordinale
+coeff_df <- summary(model_probit)$coefficients %>%
+  as.data.frame() %>%
+  mutate(variable = rownames(.)) %>%
+  rename(estimate = Value) %>%
+  filter(!grepl("\\|", variable)) %>%  # Escludo i cutpoints
+  arrange(desc(abs(estimate))) %>%  # Ordino per grandezza assoluta
+  head(3)  # Seleziono le 3 variabili più influenti
+
+
+plot <- ggplot(coeff_df, aes(x = reorder(variable, abs(estimate)), y = estimate, fill = estimate)) +
+  geom_bar(stat = "identity", width = 0.3) +  
+  coord_flip() +
+  theme_bw() +  # Sfondo bianco
+  labs(title = "Top 3 Variabili Più Influenti sul Benessere",
+       x = "Variabile", y = "Coefficiente del modello Probit Ordinale") +
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0)
+
+ggsave("top_3_variabili_benessere.png", plot = plot, width = 8, height = 6, dpi = 300)
+
+```
+
+
+VIF PER OGNI VARIABILE
+```{r}
+library(ggplot2)
+
+# Creazione del grafico dei VIF
+ggplot(vif_df, aes(x = reorder(Variable, VIF), y = VIF, fill = VIF)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Controllo Multicollinearità", x = "Variabile", y = "VIF") +
+  scale_fill_gradient2(low = "green", mid = "yellow", high = "red", midpoint = 5) +
+  theme_minimal()
+
+ggsave("vif_values_plot.png", width = 8, height = 6)  
+
+
+```
+
+
+MODEL_PROBIT_RESULTS WITH STATS
+```{r}
+
+library(gridExtra)    # Per la tabella
+library(grid)         # Per la grafica della tabella
+
+
+summary_model <- summary(model_probit)
+
+# Estrazione  dalla tabella dei coefficienti
+coeff_table <- summary_model$coefficients
+
+# Limitazione dei decimali a 4 per i coefficienti e gli errori standard
+coeff_table[, 1:2] <- round(coeff_table[, 1:2], 4)
+
+# Limitazione dei decimali della colonna t value a 4
+coeff_table[, 3] <- round(coeff_table[, 3], 4)
+
+# Calcola i p-values usando la formula: p-value = 2 * (1 - pnorm(|t-value|))
+p_values <- 2 * (1 - pnorm(abs(coeff_table[, 3])))
+
+# Format p-values a 4 decimali, assicurandosi che non siano visualizzati solo come 0
+formatted_p_values <- sprintf("%.4f", p_values)
+
+coeff_table <- cbind(coeff_table, p_value = formatted_p_values)
+
+# Significatività
+significance <- ifelse(p_values < 0.001, "***", 
+                       ifelse(p_values < 0.01, "**", 
+                              ifelse(p_values < 0.05, "*", 
+                                     ifelse(p_values < 0.1, ".", ""))))
+
+coeff_table <- cbind(coeff_table, Significance = significance)
+
+residual_deviance <- 73720.08  # Residual Deviance (dato fornito)
+aic <- 73772.08  # AIC (dato fornito)
+num_obs <- 58481  # Numero di osservazioni (dato fornito)
+
+
+model_stats <- data.frame(
+  "Statistic" = c("Residual Deviance", "AIC", "Number of Observations"),
+  "Value" = c(round(residual_deviance, 2), round(aic, 2), num_obs)
+)
+
+table_plot <- tableGrob(coeff_table)
+stats_table_plot <- tableGrob(model_stats)
+
+png("model_probit_results_with_stats.png", width = 1200, height = 800)
+grid.arrange(table_plot, stats_table_plot, ncol = 2)
+dev.off()
+
+
+
+```
+
+NACE_BROAD_GROUPS TABLE
+
+```{r}
+# Carica i pacchetti necessari
+library(dplyr)
+library(gridExtra)
+library(grid)
+library(haven)  # Per gestire variabili labelled
+
+# Converti la variabile "NACE_broad_groups" in un fattore con le etichette
+nace_factors <- factor(dataset$NACE_broad_groups, 
+                       levels = 1:10,  # Le categorie corrispondenti ai numeri 1:10
+                       labels = c("Agriculture", 
+                                  "Commerce and hospitality", 
+                                  "Construction", 
+                                  "Education", 
+                                  "Financial services", 
+                                  "Health", 
+                                  "Industry", 
+                                  "Other services", 
+                                  "Public administration", 
+                                  "Transportation and storage"))
+
+# Crea una tabella delle frequenze per ciascuna categoria
+nace_table <- data.frame(Category = levels(nace_factors), 
+                         Frequency = as.vector(table(nace_factors)))
+
+# Crea la tabella grafica con gridExtra
+table_plot <- tableGrob(nace_table)
+
+# Salva la tabella come immagine PNG
+png("nace_broad_groups_table.png", width = 800, height = 600)
+grid.draw(table_plot)
+dev.off()
+
+# Salva la tabella come immagine JPG
+jpeg("nace_broad_groups_table.jpg", width = 800, height = 600)
+grid.draw(table_plot)
+dev.off()
+
+# Messaggio di conferma
+cat("La tabella con le etichette è stata salvata come immagine PNG e JPG.")
+
+nace_table
+
+```
+
+GROUPED_NACE_TABLE FREQUENCIES
+```{r}
+# Carica i pacchetti necessari
+library(dplyr)
+library(gridExtra)
+library(grid)
+
+# Calcola le frequenze delle categorie di 'grouped_nace' nel dataset pulito
+nace_frequencies <- data.frame(Category = levels(factor(dataset_clean$grouped_nace)),
+                               Frequency = as.vector(table(dataset_clean$grouped_nace)))
+
+# Crea la tabella grafica con gridExtra
+table_plot <- tableGrob(nace_frequencies)
+
+# Salva la tabella come immagine PNG
+png("grouped_nace_frequencies_table.png", width = 800, height = 600)
+grid.draw(table_plot)
+dev.off()
+
+# Salva la tabella come immagine JPG
+jpeg("grouped_nace_frequencies_table.jpg", width = 800, height = 600)
+grid.draw(table_plot)
+dev.off()
+
+# Messaggio di conferma
+cat("La tabella delle frequenze di 'grouped_nace' è stata salvata come immagine PNG e JPG.")
+
+nace_frequencies
+
+```
+
+
+PAESI CON PIU % LAVORATORI STRESSATI
+```{r}
+# Carica i pacchetti necessari
+#library(dplyr)
+#library(ggplot2)
+
+# Crea una mappatura dei numeri ai nomi dei paesi
+#country_names <- c("12" = "France", "27" = "Slovakia", "29" = "Montenegro", 
+                   "31" = "Serbia", "28" = "United Kingdom")
+
+# Calcolare la frequenza di "strain = TRUE" per ogni paese
+#strain_percentage <- dataset %>%
+ # filter(strain == TRUE) %>%
+  #group_by(Country) %>%
+  #summarise(perc_strain = n() / nrow(dataset[dataset$Country == unique(Country), ]) * 100) %>%
+  #arrange(desc(perc_strain))
+
+# Sostituire i numeri con i nomi dei paesi
+#strain_percentage$Country <- as.character(strain_percentage$Country)
+#strain_percentage$Country <- recode(strain_percentage$Country, !!!country_names)
+
+# Selezioniamo i 5 paesi con la percentuale più alta di strain = TRUE
+#top_5_countries <- head(strain_percentage, 5)
+
+# Creare il grafico
+#ggplot(top_5_countries, aes(x = reorder(Country, perc_strain), y = perc_strain)) +
+ # geom_bar(stat = "identity", fill = "red") +  # Colore rosso per le barre
+#labs(title = "Paesi con la percentuale maggiore di lavoratori stressati", 
+    #   x = "Paese", 
+   #    y = "Percentuale di lavoratori con Strain = TRUE") +
+ # theme_minimal() +
+  #coord_flip()  # Inverte l'asse x per migliorare la leggibilità
+
+```
+
+
+```{r}
+library(MASS)
+library(dplyr)
+library(ggplot2)
+
+# Estrarre i coefficienti del modello Probit Ordinale
+coeff_df <- summary(model_probit)$coefficients %>%
+  as.data.frame() %>%
+  mutate(variable = rownames(.)) %>%
+  rename(estimate = Value) %>%
+  filter(!grepl("\\|", variable))  # Escludo i cutpoints
+
+# Seleziono i 3 coefficienti più influenti negativamente (dal più influente al meno influente)
+top_negative <- coeff_df %>% arrange(estimate) %>% head(3)
+
+# Seleziono i 3 coefficienti più influenti positivamente, rimuovo il più grande e inverto l'ordine dei due rimanenti
+top_positive <- coeff_df %>% arrange(desc(estimate)) %>% slice(2:3) %>% arrange(estimate * -1)
+
+# Unisco i due dataset con i negativi prima e i positivi dopo (invertiti)
+coeff_selected <- bind_rows(top_negative, top_positive)
+
+# Ordino i livelli del fattore per visualizzazione corretta nel grafico
+coeff_selected$variable <- factor(coeff_selected$variable, levels = coeff_selected$variable)
+
+# Creare il grafico con barre rosse per i negativi e blu per i positivi
+plot <- ggplot(coeff_selected, aes(x = reorder(variable, -estimate), y = estimate, fill = estimate > 0)) +
+  geom_bar(stat = "identity", width = 0.3) +  
+  coord_flip() +
+  theme_bw() +  
+  labs(title = "FATTORI PIÚ INFLUENTI",
+       x = "Variabile", y = "Coefficiente del modello Probit Ordinale") +
+  scale_fill_manual(values = c("red", "green"), labels = c("Negativo", "Positivo"), name = "Impatto")
+
+ggsave("top_3_negativi_2_positivi_invertiti.png", plot = plot, width = 8, height = 6, dpi = 300)
+
+plot
+
+```
+
